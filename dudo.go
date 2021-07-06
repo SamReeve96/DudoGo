@@ -11,7 +11,7 @@ type GameState struct {
 	players    []Player
 	round      int
 	currentBet Bet
-	wildOnes   bool //Do ones count as other values (for now, no)
+	wildOnes   bool // Do ones count as other values (for now, no)
 }
 
 // Player - a player of dudo
@@ -19,7 +19,6 @@ type Player struct {
 	name               string
 	remainingDiceCount int
 	dice               []int
-	// bet                Bet Dont think this is needed, just store the last bet and infer the previous bet-er
 }
 
 // Bet - players bet
@@ -28,9 +27,10 @@ type Bet struct {
 	value int
 }
 
+// Global game state
 var gameState GameState
 
-//Setup the game and then execute the game loo
+// Setup the game and then execute the game loo
 func main() {
 	fmt.Printf("Hello! Welcome to dudo go! Before we can play we need to set a few rules \n")
 	setupPlayers()
@@ -42,18 +42,20 @@ func main() {
 	runGame()
 }
 
+// Just a wrapper to handle requesting user input from the CLI
 func handleInput(output string) string {
 	fmt.Printf(output)
 	var message string
 	_, err := fmt.Scanln(&message)
 	if err != nil {
-		// throw err
 		fmt.Println(err)
 	}
-	fmt.Printf("user supplied: %v \n", message)
+	// For debugging input issues
+	// fmt.Printf("user supplied: %v \n", message)
 	return message
 }
 
+// Setup however many players are participating, their names and how many dice everyone should have
 func setupPlayers() {
 	//TODO - replace the cli ruleset with a rules .json!
 	// Get the number of players
@@ -81,6 +83,7 @@ func setupPlayers() {
 	}
 }
 
+// Calc the total dice in the game currently
 func getTotalDiceCount() int {
 	totalDice := 0
 	for i := 0; i < len(gameState.players); i++ {
@@ -89,6 +92,7 @@ func getTotalDiceCount() int {
 	return totalDice
 }
 
+// run the game instance until it ends (total dice == 0)
 func runGame() {
 	totalDice := getTotalDiceCount()
 	for totalDice > 0 {
@@ -100,6 +104,7 @@ func runGame() {
 	fmt.Printf("Game Over! Congrats: %v", gameState.players[0].name)
 }
 
+// Generate Dice values for each of the player's dice
 func rollDice(PlayerDiceNumber int) []int {
 	var dice []int
 	for i := 0; i < PlayerDiceNumber; i++ {
@@ -109,6 +114,7 @@ func rollDice(PlayerDiceNumber int) []int {
 	return dice
 }
 
+// Create a bet (a suggested Value and Count of that value)
 func createBet(currentPlayerNo int) {
 	validBet := false
 	var betValue int
@@ -117,13 +123,11 @@ func createBet(currentPlayerNo int) {
 	for validBet == false {
 		betValue, err = strconv.Atoi(handleInput("What value are you betting? (1-6)\n"))
 		if err != nil {
-			// throw err
 			fmt.Println(err)
 		}
 		totalDiceCount := getTotalDiceCount()
 		betCount, err = strconv.Atoi(handleInput(fmt.Sprintf("and how many %v 's are you betting? (1-%v) \n", betValue, totalDiceCount)))
 		if err != nil {
-			// throw err
 			fmt.Println(err)
 		}
 		validBet = validateBet(betValue, betCount)
@@ -142,6 +146,7 @@ func createBet(currentPlayerNo int) {
 	}
 }
 
+// Check that the bet value and count are acceptable ints and are possible in the current game state
 // TODO - Return what validation failed to inform the player
 func validateBet(value int, count int) bool {
 	totalDiceCount := getTotalDiceCount()
@@ -155,11 +160,7 @@ func validateBet(value int, count int) bool {
 		return false
 	}
 
-	// is the bet better than the last bet?
-	// if the first round then skip
-	fmt.Printf("Checking if better \n")
-	fmt.Printf("round is: %v \n", gameState.round)
-	//if there is a bet, check if better
+	// (if the first round then skip) if not then evaluate bet
 	if (gameState.currentBet.count == 0 && gameState.currentBet.value == 0) || checkIfBetterBet(value, count) {
 		return true
 	}
@@ -170,7 +171,7 @@ func validateBet(value int, count int) bool {
 // a better bet is one with a higher value or count
 // Unless at 6, then the value can be 1-5 and the count is doubled
 func checkIfBetterBet(value int, count int) bool {
-	// if the current bet value is 6 (max value) and the new bet is not, check the count has doubled
+	// if the current bet value is 6 (max value) and the new bet is not, check the count has doubled (wild ones)
 	if gameState.currentBet.value == 6 && value != 6 {
 		if count >= gameState.currentBet.count*2 {
 			return true
@@ -180,7 +181,7 @@ func checkIfBetterBet(value int, count int) bool {
 	higherValue := value > gameState.currentBet.value
 	higherCount := count > gameState.currentBet.count
 
-	// neither value or count was higher
+	// neither value or count has increased
 	if !higherValue && !higherCount {
 		return false
 	}
@@ -188,18 +189,20 @@ func checkIfBetterBet(value int, count int) bool {
 	return true
 }
 
-func callBS(accusingPlayer int) {
+// Check if the current bet is valid or not, then remove a die from whoever was wrong
+func accuse(accusingPlayer int) {
 	// check the last players bet and see if it was correct or not
 	accusedPlayer := getPreviousPlayer(accusingPlayer)
 
+	// count how many instances of the value there currently is
 	actualValueCount := getValueCount(gameState.currentBet.value)
 
-	fmt.Printf("player bet that there were %v %v's and there are actually: %v of them\n", gameState.currentBet.count, gameState.currentBet.value, actualValueCount)
+	// TODO - Print the accused player's name
+	fmt.Printf("Player bets that there were %v %v's and there are actually: %v of them\n", gameState.currentBet.count, gameState.currentBet.value, actualValueCount)
 
 	// if the actual count of the value is less than the bet count
 	if actualValueCount >= gameState.currentBet.count {
 		fmt.Printf("Accuser was wrong, they lose a die \n")
-		// accuser was wrong, take one away from them
 		gameState.players[accusingPlayer].remainingDiceCount--
 
 		if gameState.players[accusingPlayer].remainingDiceCount < 1 {
@@ -207,8 +210,7 @@ func callBS(accusingPlayer int) {
 		}
 
 	} else {
-		fmt.Printf("Previous better was wrong, they lose a die \n")
-		// accuser was right, take one away from accused
+		fmt.Printf("Accused was wrong, they lose a die \n")
 		gameState.players[accusedPlayer].remainingDiceCount--
 
 		if gameState.players[accusedPlayer].remainingDiceCount < 1 {
@@ -217,8 +219,9 @@ func callBS(accusingPlayer int) {
 	}
 }
 
+// Get the player that just made a bet
 func getPreviousPlayer(currentPlayerNo int) int {
-	// if it isnt the last player in the slice...
+	// if it is the first player in the slice
 	if currentPlayerNo == 0 {
 		return len(gameState.players) - 1
 	} else {
@@ -226,6 +229,15 @@ func getPreviousPlayer(currentPlayerNo int) int {
 	}
 }
 
+func getNextPlayer(currentPlayer int) int {
+	if (currentPlayer + 1) == len(gameState.players) {
+		return 0
+	} else {
+		return currentPlayer + 1
+	}
+}
+
+// Check if Bet is possible (Occurs when the max count is reached (bet.count == total no. dice in the game))
 func evaluateCurrentBet(currentPlayerNo int) {
 	actualValueCount := getValueCount(gameState.currentBet.value)
 
@@ -242,7 +254,7 @@ func evaluateCurrentBet(currentPlayerNo int) {
 
 }
 
-// not sure about this
+// remove player from players in current game
 func removePlayer(playerIndex int) {
 	fmt.Printf("%s has no more dice, theeeeeeeey're out!", gameState.players[playerIndex].name)
 
@@ -266,23 +278,29 @@ func getValueCount(value int) int {
 	return valueCount
 }
 
+// Run though all the actions of a single round of dudo (Players bet, until an accusation or max dice count)
+// TODO - The starting player should change, either be the one that lost a dice the previous round or one after them if eliminated
 func executeRound() {
 	for i := 0; i < len(gameState.players); i++ {
 		gameState.players[i].dice = rollDice(gameState.players[i].remainingDiceCount)
 	}
 	gameState.currentBet = Bet{0, 0}
+	roundActive := true
+	currentPlayer := -1
 round:
-	for currentPlayerNo := 0; currentPlayerNo < len(gameState.players); currentPlayerNo++ {
-
+	// think this is wrong, shouldnt iterate over players to end, it should loop infinitely as the max count bet rule will always break out
+	//currentPlayerNo := 0; currentPlayerNo < len(gameState.players); currentPlayerNo++
+	for roundActive {
+		currentPlayer := getNextPlayer(currentPlayer)
 		if len(gameState.players) == 1 {
 			gameState.players[0].remainingDiceCount = 0
-			//Game over?
+			// Game over
 			break
 		} else {
-			fmt.Printf("It's %v's turn! \n", gameState.players[currentPlayerNo].name)
-			fmt.Printf("You rolled: %v \n", gameState.players[currentPlayerNo].dice)
-			// if its the first round and first players turn
-			if currentPlayerNo != 0 {
+			fmt.Printf("It's %v's turn! \n", gameState.players[currentPlayer].name)
+			fmt.Printf("You rolled: %v \n", gameState.players[currentPlayer].dice)
+			firstBetOfRound := (gameState.currentBet.count == 0 && gameState.currentBet.value == 0)
+			if !firstBetOfRound {
 				// ask to bet or call BS
 				validChoice := false
 				for validChoice == false {
@@ -290,12 +308,13 @@ round:
 					playerAction := handleInput("Do you want to Bet (B) or call BS (C)? \n")
 					if playerAction == "B" || playerAction == "b" {
 						validChoice = true
-						createBet(currentPlayerNo)
+						createBet(currentPlayer)
 					} else if playerAction == "C" || playerAction == "c" { //Should cast to lowwer case but cba for now
 						validChoice = true
-						callBS(currentPlayerNo)
+						accuse(currentPlayer)
 
 						// if the bet was called end the round, skip the rest of the players turns, evaluate outcome and start a new round
+						// presume roundActive is redundant here if labeled break is working...
 						break round
 
 					} else {
@@ -303,10 +322,9 @@ round:
 					}
 				}
 			} else {
-				createBet(currentPlayerNo)
+				createBet(currentPlayer)
 			}
 
 		}
 	}
-	fmt.Printf("Gone through all players, keep betting! until \n")
 }
