@@ -1,4 +1,4 @@
-package gameLogic
+package logic
 
 import (
 	"fmt"
@@ -44,19 +44,6 @@ func RunLogic() {
 	gameState.currentPlayer = 0
 	gameState.round = 0
 	runGame()
-}
-
-// Just a wrapper to handle requesting user input from the CLI
-func handleInput(output string) string {
-	fmt.Printf(output)
-	var message string
-	_, err := fmt.Scanln(&message)
-	if err != nil {
-		fmt.Println(err)
-	}
-	// For debugging input issues
-	// fmt.Printf("user supplied: %v \n", message)
-	return message
 }
 
 // Setup however many players are participating, their names and how many dice everyone should have
