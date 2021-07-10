@@ -9,10 +9,10 @@ import (
 
 // GameState - state of the current game
 type GameState struct {
-	players       []Player
-	round         int
-	currentBet    Bet
-	wildOnes      bool // Do ones count as other values (for now, no)
+	players    []Player
+	round      int
+	currentBet Bet
+	// wildOnes      bool // Do ones count as other values (for now, o)
 	currentPlayer int
 }
 
