@@ -38,6 +38,8 @@ func main() {
 	fmt.Printf("Main: Currently %v games are running \n", len(server.activeGames))
 
 	// get the game to being running it
-	gameToRun := *server.activeGames[0]
-	gameToRun.RunGame()
+	//gameToRun := *server.activeGames[0]
+
+	// this only runs the game being setup. would be better to call run game from game state (create a game interface?)
+	logic.RunGame()
 }

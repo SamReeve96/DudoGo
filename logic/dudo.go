@@ -35,7 +35,7 @@ type Bet struct {
 var gameState GameState
 
 // Setup the game and then execute the game loo
-func SetupGame() {
+func SetupGame() *GameState {
 	fmt.Printf("Hello! Welcome to dudo go! Before we can play we need to set a few rules \n")
 	setupPlayers()
 	fmt.Printf("Awesome! we have %v Players!: \n", strconv.Itoa(len(gameState.Players)))
@@ -45,6 +45,8 @@ func SetupGame() {
 	//intalise the first player
 	gameState.CurrentPlayer = 0
 	gameState.Round = 0
+
+	return &gameState
 }
 
 // Setup however many Players are participating, their Names and how many Dice everyone should have
@@ -85,7 +87,7 @@ func getTotalDiceCount() int {
 }
 
 // run the game instance until it ends (total Dice == 0)
-func runGame() {
+func RunGame() {
 	totalDice := getTotalDiceCount()
 	for totalDice > 0 {
 		gameState.Round++
