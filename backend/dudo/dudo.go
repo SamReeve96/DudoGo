@@ -37,6 +37,7 @@ var gameState GameState
 // Setup the game and then execute the game loo
 func SetupGame() *GameState {
 	fmt.Printf("Hello! Welcome to dudo go! Before we can play we need to set a few rules \n")
+	gameState.Players = []Player{}
 	setupPlayers()
 	fmt.Printf("Awesome! we have %v Players!: \n", strconv.Itoa(len(gameState.Players)))
 	for playerNo := 0; playerNo < len(gameState.Players); playerNo++ {
@@ -53,7 +54,7 @@ func SetupGame() *GameState {
 func setupPlayers() {
 	//TODO - replace the cli ruleset with a rules .json!
 	// Get the number of Players
-	for gameState.Players == nil {
+	for len(gameState.Players) == 0 {
 		PlayersInt, err := strconv.Atoi(cli.HandleInput("How many Players?: \n"))
 		if err != nil {
 			// throw err
