@@ -4,25 +4,25 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/SamReeve96/DudoGo/backend/logic"
+	dudo "github.com/SamReeve96/DudoGo/backend/dudo"
 )
 
 // serverState - holds states of games
 type serverState struct {
-	activeGames []*logic.GameState
+	activeGames []*dudo.GameState
 }
 
 func main() {
 	server := serverState{
 		// change to pointers so that we can access live state rather than instance of object?
-		activeGames: []*logic.GameState{},
+		activeGames: []*dudo.GameState{},
 	}
 
 	fmt.Printf("Main: Starting game logic \n")
 
 	// create a new gamestate
-	newGamePointer := logic.SetupGame()
-	var newGame logic.GameState
+	newGamePointer := dudo.SetupGame()
+	var newGame dudo.GameState
 
 	if newGamePointer == nil {
 		fmt.Printf("No players, ending \n")
@@ -41,5 +41,5 @@ func main() {
 	//gameToRun := *server.activeGames[0]
 
 	// this only runs the game being setup. would be better to call run game from game state (create a game interface?)
-	logic.RunGame()
+	dudo.RunGame()
 }
