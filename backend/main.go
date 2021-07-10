@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/SamReeve96/DudoGo/logic"
+	"github.com/SamReeve96/DudoGo/backend/logic"
 )
 
 // serverState - holds states of games

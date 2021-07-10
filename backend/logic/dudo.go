@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SamReeve96/DudoGo/cli"
+	"github.com/SamReeve96/DudoGo/backend/cli"
 )
 
 // GameState - state of the current game
