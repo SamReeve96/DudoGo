@@ -1,17 +1,19 @@
-package main
+package gameLogic
 
 import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"time"
 )
 
 // GameState - state of the current game
 type GameState struct {
-	players    []Player
-	round      int
-	currentBet Bet
-	wildOnes   bool // Do ones count as other values (for now, no)
+	players       []Player
+	round         int
+	currentBet    Bet
+	wildOnes      bool // Do ones count as other values (for now, no)
+	currentPlayer int
 }
 
 // Player - a player of dudo
@@ -31,13 +33,15 @@ type Bet struct {
 var gameState GameState
 
 // Setup the game and then execute the game loo
-func main() {
+func RunLogic() {
 	fmt.Printf("Hello! Welcome to dudo go! Before we can play we need to set a few rules \n")
 	setupPlayers()
 	fmt.Printf("Awesome! we have %v players!: \n", strconv.Itoa(len(gameState.players)))
 	for playerNo := 0; playerNo < len(gameState.players); playerNo++ {
 		fmt.Printf("Good luck!: %v \n", gameState.players[playerNo].name)
 	}
+	//intalise the first player
+	gameState.currentPlayer = 0
 	gameState.round = 0
 	runGame()
 }
@@ -106,16 +110,19 @@ func runGame() {
 
 // Generate Dice values for each of the player's dice
 func rollDice(PlayerDiceNumber int) []int {
+	// add a seed so numbers are randomised and non-repeatable on playthroughs
+	rand.Seed(time.Now().UnixNano())
 	var dice []int
 	for i := 0; i < PlayerDiceNumber; i++ {
-		// get an int between (0 - 5) +1
-		dice = append(dice, (rand.Intn(5) + 1))
+		// get an int between ((6 - 1) + 1) +1
+		// upper - lower + 1 + lower
+		dice = append(dice, (rand.Intn(6) + 1))
 	}
 	return dice
 }
 
 // Create a bet (a suggested Value and Count of that value)
-func createBet(currentPlayerNo int) {
+func createBet() {
 	validBet := false
 	var betValue int
 	var betCount int
@@ -142,7 +149,7 @@ func createBet(currentPlayerNo int) {
 
 	// check if current bet is the max possible bet, i.e. Count of value = total die if so move to eval!
 	if gameState.currentBet.count == getTotalDiceCount() {
-		evaluateCurrentBet(currentPlayerNo)
+		evaluateCurrentBet()
 	}
 }
 
@@ -190,7 +197,8 @@ func checkIfBetterBet(value int, count int) bool {
 }
 
 // Check if the current bet is valid or not, then remove a die from whoever was wrong
-func accuse(accusingPlayer int) {
+func accuse() {
+	accusingPlayer := gameState.currentPlayer
 	// check the last players bet and see if it was correct or not
 	accusedPlayer := getPreviousPlayer(accusingPlayer)
 
@@ -229,21 +237,21 @@ func getPreviousPlayer(currentPlayerNo int) int {
 	}
 }
 
-func getNextPlayer(currentPlayer int) int {
-	if (currentPlayer + 1) == len(gameState.players) {
-		return 0
+func getNextPlayer() {
+	if (gameState.currentPlayer + 1) == len(gameState.players) {
+		gameState.currentPlayer = 0
 	} else {
-		return currentPlayer + 1
+		gameState.currentPlayer++
 	}
 }
 
 // Check if Bet is possible (Occurs when the max count is reached (bet.count == total no. dice in the game))
-func evaluateCurrentBet(currentPlayerNo int) {
+func evaluateCurrentBet() {
 	actualValueCount := getValueCount(gameState.currentBet.value)
 
 	if actualValueCount < gameState.currentBet.count {
 		fmt.Printf("last player was wrong, they lose a die \n")
-		previousPlayer := getPreviousPlayer(currentPlayerNo)
+		previousPlayer := getPreviousPlayer(gameState.currentPlayer)
 		gameState.players[previousPlayer].remainingDiceCount--
 
 		if gameState.players[previousPlayer].remainingDiceCount < 1 {
@@ -281,24 +289,22 @@ func getValueCount(value int) int {
 // Run though all the actions of a single round of dudo (Players bet, until an accusation or max dice count)
 // TODO - The starting player should change, either be the one that lost a dice the previous round or one after them if eliminated
 func executeRound() {
+
 	for i := 0; i < len(gameState.players); i++ {
 		gameState.players[i].dice = rollDice(gameState.players[i].remainingDiceCount)
 	}
 	gameState.currentBet = Bet{0, 0}
 	roundActive := true
-	currentPlayer := -1
 round:
-	// think this is wrong, shouldnt iterate over players to end, it should loop infinitely as the max count bet rule will always break out
-	//currentPlayerNo := 0; currentPlayerNo < len(gameState.players); currentPlayerNo++
 	for roundActive {
-		currentPlayer := getNextPlayer(currentPlayer)
+		getNextPlayer()
 		if len(gameState.players) == 1 {
 			gameState.players[0].remainingDiceCount = 0
 			// Game over
 			break
 		} else {
-			fmt.Printf("It's %v's turn! \n", gameState.players[currentPlayer].name)
-			fmt.Printf("You rolled: %v \n", gameState.players[currentPlayer].dice)
+			fmt.Printf("It's %v's turn! \n", gameState.players[gameState.currentPlayer].name)
+			fmt.Printf("You rolled: %v \n", gameState.players[gameState.currentPlayer].dice)
 			firstBetOfRound := (gameState.currentBet.count == 0 && gameState.currentBet.value == 0)
 			if !firstBetOfRound {
 				// ask to bet or call BS
@@ -308,10 +314,10 @@ round:
 					playerAction := handleInput("Do you want to Bet (B) or call BS (C)? \n")
 					if playerAction == "B" || playerAction == "b" {
 						validChoice = true
-						createBet(currentPlayer)
+						createBet()
 					} else if playerAction == "C" || playerAction == "c" { //Should cast to lowwer case but cba for now
 						validChoice = true
-						accuse(currentPlayer)
+						accuse()
 
 						// if the bet was called end the round, skip the rest of the players turns, evaluate outcome and start a new round
 						// presume roundActive is redundant here if labeled break is working...
@@ -322,7 +328,7 @@ round:
 					}
 				}
 			} else {
-				createBet(currentPlayer)
+				createBet()
 			}
 
 		}
