@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	dudo "github.com/SamReeve96/DudoGo/backend/dudo"
+	"github.com/SamReeve96/DudoGo/backend/cli"
+	"github.com/SamReeve96/DudoGo/backend/dudo"
+	"github.com/SamReeve96/DudoGo/backend/server"
 )
 
 // serverState - holds states of games
@@ -13,6 +15,25 @@ type serverState struct {
 }
 
 func main() {
+	option := cli.HandleInput("Run server or game or both? (1,2,3)")
+
+	switch option {
+	case "1":
+		serverManager()
+	case "2":
+		gameManager()
+	case "3":
+		fmt.Printf("Comming soon tm")
+	default:
+		fmt.Printf("invalid option")
+	}
+}
+
+func serverManager() {
+	server.Serve()
+}
+
+func gameManager() {
 	server := serverState{
 		// change to pointers so that we can access live state rather than instance of object?
 		activeGames: []*dudo.GameState{},
