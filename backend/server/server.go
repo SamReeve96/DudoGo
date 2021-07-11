@@ -8,12 +8,10 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/SamReeve96/DudoGo/backend/dudo"
+	"github.com/SamReeve96/DudoGo/backend/gameManager"
 )
 
 func Serve() {
-	buildApp()
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		panic("blam!")
@@ -28,7 +26,7 @@ func Serve() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func buildApp() {
+func BuildApp() {
 	if runtime.GOOS == "windows" {
 		// go to site dir and build
 		os.Chdir("../frontend/dudogo")
@@ -47,36 +45,17 @@ func buildApp() {
 }
 
 func gameHandler(w http.ResponseWriter, r *http.Request) {
-	// if r.URL.Path != "/hello" {
-	// 	http.Error(w, "404 not found.", http.StatusNotFound)
-	// 	return
-	// }
 
 	if r.Method != "GET" {
 		http.Error(w, "Method is not supported.", http.StatusNotFound)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello!")
+	fmt.Fprintf(w, "Game created!")
 	startGameFromrequest()
 }
 
 func startGameFromrequest() {
-	fmt.Printf("Main: Starting game logic \n")
-
-	// create a new gamestate
-	newGamePointer := dudo.SetupGame()
-	var newGame dudo.GameState
-
-	if newGamePointer == nil {
-		fmt.Printf("No players, ending \n")
-		// No players means the game cant run
-		os.Exit(1)
-	} else {
-		newGame = *newGamePointer
-	}
-
-	fmt.Printf("Main: New game created featuring %v players \n", len(newGame.Players))
-	// this only runs the game being setup. would be better to call run game from game state (create a game interface?)
-	dudo.RunGame()
+	fmt.Printf("Server: Adding game to slice \n")
+	gameManager.NewGame()
 }
