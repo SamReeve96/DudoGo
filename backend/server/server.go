@@ -7,9 +7,16 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 
+	"github.com/SamReeve96/DudoGo/backend/dudo"
 	"github.com/SamReeve96/DudoGo/backend/gameManager"
 )
+
+type gameDetails struct {
+	players       int
+	dicePerPlayer int
+}
 
 func Serve() {
 	cwd, err := os.Getwd()
@@ -20,7 +27,8 @@ func Serve() {
 
 	fileServer := http.FileServer(http.Dir("../frontend/dudogo/build/"))
 	http.Handle("/", fileServer)
-	http.HandleFunc("/StartGame", gameHandler)
+	http.HandleFunc("/NewGame", newGame)
+	// http.HandleFunc("/joinGame", gameHandler)
 
 	fmt.Printf("Starting server at port 8080\n")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -44,18 +52,34 @@ func BuildApp() {
 	}
 }
 
-func gameHandler(w http.ResponseWriter, r *http.Request) {
+func newGame(w http.ResponseWriter, r *http.Request) {
+	fmt.Print("blam \n")
+	switch r.Method {
+	case "GET":
+		fmt.Printf("Cant get a new game!")
+	case "POST":
+		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
+		if err := r.ParseForm(); err != nil {
+			fmt.Printf("ParseForm() err: %v", err)
+			return
+		}
+		fmt.Printf("Post from website! r.PostFrom = %v\n", r.PostForm)
+		players, err := strconv.Atoi(r.FormValue("players"))
+		dicePerPlayer, err := strconv.Atoi(r.FormValue("dicePerPlayer"))
 
-	if r.Method != "GET" {
-		http.Error(w, "Method is not supported.", http.StatusNotFound)
-		return
+		if err != nil {
+			fmt.Printf("Invalid request values, players %s, dicePerPlayer %s", r.FormValue("players"), r.FormValue("dicePerPlayer"))
+			return
+		}
+
+		details := dudo.NewGameDetails{
+			Players:       players,
+			DicePerPlayer: dicePerPlayer,
+		}
+
+		fmt.Printf("Server: Adding game to slice \n")
+		gameManager.NewGame(details)
+	default:
+		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
 	}
-
-	fmt.Fprintf(w, "Game created!")
-	startGameFromrequest()
-}
-
-func startGameFromrequest() {
-	fmt.Printf("Server: Adding game to slice \n")
-	gameManager.NewGame()
 }

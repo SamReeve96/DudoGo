@@ -2,7 +2,6 @@ package gameManager
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/SamReeve96/DudoGo/backend/dudo"
@@ -18,17 +17,17 @@ type game struct {
 
 var activeGames []game = []game{}
 
-func NewGame() {
-	newGame := game{}
-	// create a new gamestate
-	newGameStatePointer := dudo.SetupGame()
+func NewGame(details dudo.NewGameDetails) {
 
-	if newGameStatePointer == nil {
+	if details.Players == 0 {
 		fmt.Printf("No players, ending \n")
 		// No players means the game cant run
-		os.Exit(1)
+		return
 	}
 
+	// create a new gamestate
+	newGame := game{}
+	newGameStatePointer := dudo.SetupGame(details)
 	newGame.id = uuid.New()
 	newGame.state = newGameStatePointer
 
@@ -46,9 +45,11 @@ func ReportActiveGames() {
 		select {
 		case <-ticker.C:
 			fmt.Printf("There are currently: %v games active \n", len(activeGames))
-			for _, game := range activeGames {
+			for i, game := range activeGames {
+				// TO FIX - This is the same game state regardless of the game in the for loop?
 				gameState := *game.state
-				fmt.Printf("Game ID: %s, Player Count: %v \n", game.id, len(gameState.Players))
+				players := activeGames[i].state.Players
+				fmt.Printf("Game ID: %s, Player Count: %v IPlayerCount %v \n", game.id, len(gameState.Players), len(players))
 			}
 		}
 	}

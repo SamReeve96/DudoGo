@@ -20,7 +20,7 @@ func main() {
 		server.BuildApp()
 		serverManager()
 	case "4":
-		gameManager.NewGame()
+		// gameManager.NewGame()
 	default:
 		fmt.Printf("invalid option")
 	}

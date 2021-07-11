@@ -31,15 +31,20 @@ type Bet struct {
 	Value int
 }
 
+type NewGameDetails struct {
+	Players       int
+	DicePerPlayer int
+}
+
 // Global game state
 var gameState GameState
 
 // Setup the game and then execute the game loo
-func SetupGame() *GameState {
+func SetupGame(details NewGameDetails) *GameState {
 	fmt.Printf("Hello! Welcome to dudo go! Before we can play we need to set a few rules \n")
 	gameState.Players = []Player{}
-	setupPlayers()
-	fmt.Printf("Awesome! we have %v Players!: \n", strconv.Itoa(len(gameState.Players)))
+	setupPlayers(details)
+	fmt.Printf("Awesome! we have %v Players! and they have %v dice each \n", len(gameState.Players), gameState.Players[0].Dice)
 	for playerNo := 0; playerNo < len(gameState.Players); playerNo++ {
 		fmt.Printf("Good luck!: %v \n", gameState.Players[playerNo].Name)
 	}
@@ -51,30 +56,14 @@ func SetupGame() *GameState {
 }
 
 // Setup however many Players are participating, their Names and how many Dice everyone should have
-func setupPlayers() {
+func setupPlayers(details NewGameDetails) {
 	//TODO - replace the cli ruleset with a rules .json!
 	// Get the number of Players
-	for len(gameState.Players) == 0 {
-		PlayersInt, err := strconv.Atoi(cli.HandleInput("How many Players?: \n"))
-		if err != nil {
-			// throw err
-			fmt.Println(err)
-		}
-		for i := 0; i < PlayersInt; i++ {
-			var newPlayer Player
-			gameState.Players = append(gameState.Players, newPlayer)
-		}
-	}
-	for playerNo := 0; playerNo < len(gameState.Players); playerNo++ {
-		gameState.Players[playerNo].Name = cli.HandleInput(fmt.Sprintf("Enter player %v's Name: \n", (playerNo + 1)))
-	}
-	PlayerDiceCount, err := strconv.Atoi(cli.HandleInput("How many Dice should each person have?: "))
-	if err != nil {
-		// throw err
-		fmt.Println(err)
-	}
-	for playerNo := 0; playerNo < len(gameState.Players); playerNo++ {
-		gameState.Players[playerNo].RemainingDiceCount = PlayerDiceCount
+	for i := 0; i < details.Players; i++ {
+		var newPlayer Player
+		newPlayer.Name = "Unknown-Player-" + strconv.Itoa(i)
+		newPlayer.RemainingDiceCount = details.DicePerPlayer
+		gameState.Players = append(gameState.Players, newPlayer)
 	}
 }
 
