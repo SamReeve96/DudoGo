@@ -11,8 +11,9 @@ import (
 
 // game holds the pointer to a game state and it's ID
 type game struct {
-	state *dudo.GameState
-	id    uuid.UUID
+	state      dudo.GameState
+	id         uuid.UUID
+	friendlyID string
 }
 
 var activeGames []game = []game{}
@@ -27,9 +28,10 @@ func NewGame(details dudo.NewGameDetails) {
 
 	// create a new gamestate
 	newGame := game{}
-	newGameStatePointer := dudo.SetupGame(details)
+	newGameState := dudo.SetupGame(details)
 	newGame.id = uuid.New()
-	newGame.state = newGameStatePointer
+	newGame.state = newGameState
+	newGame.friendlyID = details.FriendlyID
 
 	fmt.Printf("Main: New game created with ID: %v \n", newGame.id)
 	// add to list of games
@@ -46,11 +48,19 @@ func ReportActiveGames() {
 		case <-ticker.C:
 			fmt.Printf("There are currently: %v games active \n", len(activeGames))
 			for i, game := range activeGames {
-				// TO FIX - This is the same game state regardless of the game in the for loop?
-				gameState := *game.state
 				players := activeGames[i].state.Players
-				fmt.Printf("Game ID: %s, Player Count: %v IPlayerCount %v \n", game.id, len(gameState.Players), len(players))
+				fmt.Printf("------------------------------------------------ \n")
+				fmt.Printf(" Game ID: %s \n Player Count: %v\n friendlyID: %s \n", game.id, len(players), game.friendlyID)
 			}
 		}
 	}
+}
+
+func FriendlyIDInUse(newID string) bool {
+	for _, game := range activeGames {
+		if game.friendlyID == newID {
+			return true
+		}
+	}
+	return false
 }

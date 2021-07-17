@@ -34,17 +34,19 @@ type Bet struct {
 type NewGameDetails struct {
 	Players       int
 	DicePerPlayer int
+	FriendlyID    string
+	CreatorName   string
 }
 
 // Global game state
 var gameState GameState
 
 // Setup the game and then execute the game loo
-func SetupGame(details NewGameDetails) *GameState {
+func SetupGame(details NewGameDetails) GameState {
 	fmt.Printf("Hello! Welcome to dudo go! Before we can play we need to set a few rules \n")
 	gameState.Players = []Player{}
 	setupPlayers(details)
-	fmt.Printf("Awesome! we have %v Players! and they have %v dice each \n", len(gameState.Players), gameState.Players[0].Dice)
+	fmt.Printf("Awesome! we have %v Players! and they have %v dice each \n", len(gameState.Players), gameState.Players[0].RemainingDiceCount)
 	for playerNo := 0; playerNo < len(gameState.Players); playerNo++ {
 		fmt.Printf("Good luck!: %v \n", gameState.Players[playerNo].Name)
 	}
@@ -52,7 +54,7 @@ func SetupGame(details NewGameDetails) *GameState {
 	gameState.CurrentPlayer = 0
 	gameState.Round = 0
 
-	return &gameState
+	return gameState
 }
 
 // Setup however many Players are participating, their Names and how many Dice everyone should have
@@ -61,8 +63,12 @@ func setupPlayers(details NewGameDetails) {
 	// Get the number of Players
 	for i := 0; i < details.Players; i++ {
 		var newPlayer Player
-		newPlayer.Name = "Unknown-Player-" + strconv.Itoa(i)
+		newPlayer.Name = ""
 		newPlayer.RemainingDiceCount = details.DicePerPlayer
+		// Set the creators name
+		if i == 0 {
+			newPlayer.Name = details.CreatorName
+		}
 		gameState.Players = append(gameState.Players, newPlayer)
 	}
 }

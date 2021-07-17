@@ -28,7 +28,7 @@ func Serve() {
 	fileServer := http.FileServer(http.Dir("../frontend/dudogo/build/"))
 	http.Handle("/", fileServer)
 	http.HandleFunc("/NewGame", newGame)
-	// http.HandleFunc("/joinGame", gameHandler)
+	http.HandleFunc("/joinGame", joinGame)
 
 	fmt.Printf("Starting server at port 8080\n")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -53,7 +53,6 @@ func BuildApp() {
 }
 
 func newGame(w http.ResponseWriter, r *http.Request) {
-	fmt.Print("blam \n")
 	switch r.Method {
 	case "GET":
 		fmt.Printf("Cant get a new game!")
@@ -63,18 +62,41 @@ func newGame(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("ParseForm() err: %v", err)
 			return
 		}
-		fmt.Printf("Post from website! r.PostFrom = %v\n", r.PostForm)
 		players, err := strconv.Atoi(r.FormValue("players"))
 		dicePerPlayer, err := strconv.Atoi(r.FormValue("dicePerPlayer"))
+		friendlyID := (r.FormValue("friendlyID"))
+		creatorName := (r.FormValue("creatorName"))
 
 		if err != nil {
-			fmt.Printf("Invalid request values, players %s, dicePerPlayer %s", r.FormValue("players"), r.FormValue("dicePerPlayer"))
+			fmt.Printf(`Invalid request values:  
+			players: %d, 
+			dicePerPlayer %d
+			friendlyID %s `,
+				players,
+				dicePerPlayer,
+				friendlyID)
+
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if players == 0 || dicePerPlayer == 0 || friendlyID == "" {
+			w.WriteHeader(http.StatusBadRequest)
+
+			return
+		}
+
+		if gameManager.FriendlyIDInUse(friendlyID) {
+			w.WriteHeader(http.StatusConflict)
+			// improve to make response inform user that the friendly ID is in use
 			return
 		}
 
 		details := dudo.NewGameDetails{
 			Players:       players,
 			DicePerPlayer: dicePerPlayer,
+			FriendlyID:    friendlyID,
+			CreatorName:   creatorName,
 		}
 
 		fmt.Printf("Server: Adding game to slice \n")
