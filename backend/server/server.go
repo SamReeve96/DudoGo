@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/SamReeve96/DudoGo/backend/dudo"
 	"github.com/SamReeve96/DudoGo/backend/gameManager"
+	"github.com/google/uuid"
 )
 
 func Serve() {
@@ -25,6 +27,7 @@ func Serve() {
 	http.HandleFunc("/NewGame", newGame)
 	http.HandleFunc("/JoinGame", joinGame)
 	http.HandleFunc("/StartGame", startGame)
+	http.HandleFunc("/GameState", gameState)
 
 	fmt.Printf("Starting server at port 8080\n")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -157,5 +160,41 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	default:
 		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
 	}
+}
 
+func gameState(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
+		if err := r.ParseForm(); err != nil {
+			fmt.Printf("ParseForm() err: %v", err)
+			return
+		}
+
+		friendlyID := (r.FormValue("friendlyID"))
+		//TODO change this to a player ID so that you cant lookup competing players states
+
+		// creatorName := (r.FormValue("playerName"))
+
+		// for now it's fine to get and return the whole thing, but when running, remove the player data other than the current player
+		gameState := gameManager.GetGame(friendlyID)
+
+		if gameState.Id == uuid.Nil {
+			fmt.Print("Game not found")
+			w.WriteHeader(http.StatusNotFound)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		jsonResp, err := json.Marshal(gameState)
+		if err != nil {
+			log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+		}
+		w.Write(jsonResp)
+		return
+
+	case "POST":
+		fmt.Printf("Cant post a gamestate!")
+	default:
+		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
+	}
 }

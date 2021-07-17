@@ -12,9 +12,9 @@ import (
 
 // game holds the game state and it's ID
 type Game struct {
-	state      dudo.GameState
-	id         uuid.UUID
-	friendlyID string
+	State      dudo.GameState
+	Id         uuid.UUID
+	FriendlyID string
 }
 
 var activeGames []Game = []Game{}
@@ -30,11 +30,11 @@ func NewGame(details dudo.NewGameDetails) {
 	// create a new gamestate
 	newGame := Game{}
 	newGameState := dudo.SetupGame(details)
-	newGame.id = uuid.New()
-	newGame.state = newGameState
-	newGame.friendlyID = details.FriendlyID
+	newGame.Id = uuid.New()
+	newGame.State = newGameState
+	newGame.FriendlyID = details.FriendlyID
 
-	fmt.Printf("Main: New game created with ID: %v \n", newGame.id)
+	fmt.Printf("Main: New game created with ID: %v \n", newGame.Id)
 	// add to list of games
 
 	activeGames = append(activeGames, newGame)
@@ -42,9 +42,9 @@ func NewGame(details dudo.NewGameDetails) {
 }
 
 func JoinGame(friendlyID string, playerName string) bool {
-	gameToJoin := getGame(friendlyID)
+	gameToJoin := GetGame(friendlyID)
 
-	if gameToJoin.id == uuid.Nil {
+	if gameToJoin.Id == uuid.Nil {
 		return false
 	}
 
@@ -57,17 +57,17 @@ func JoinGame(friendlyID string, playerName string) bool {
 }
 
 func tryAddPlayer(game Game, newPlayerName string) bool {
-	if game.state.Started {
+	if game.State.Started {
 		//cant join game in progress
 		return false
 	}
-	for i, player := range game.state.Players {
+	for i, player := range game.State.Players {
 		if player.Name == newPlayerName {
 			// player in game already has name
 			return false
 		}
 		if player.Name == "" {
-			game.state.Players[i].Name = newPlayerName
+			game.State.Players[i].Name = newPlayerName
 			// TODO: replace lazy bools with errs and handle better
 			return true
 		}
@@ -76,26 +76,30 @@ func tryAddPlayer(game Game, newPlayerName string) bool {
 }
 
 func StartGame(friendlyID string, playerName string) error {
-	gameToStart := getGame(friendlyID)
+	gameToStart := GetGame(friendlyID)
 
-	if gameToStart.state.Players[1].Name == "" {
+	if gameToStart.State.Players[1].Name == "" {
 		return errors.New("there is only the creator present, cant start game")
 	}
 
-	if gameToStart.state.Players[0].Name != playerName {
+	if gameToStart.State.Players[0].Name != playerName {
 		return errors.New("only the creator can start a game")
 	}
 
-	gameToStart.state.Started = true
+	gameToStart.State.Started = true
 
+	// start the first round
+	dudo.NewRound()
+
+	// remove this at some point, but here to show that the game can be started.
 	go dudo.RunGame()
 
 	return nil
 }
 
-func getGame(friendlyID string) Game {
+func GetGame(friendlyID string) Game {
 	for _, game := range activeGames {
-		if game.friendlyID == friendlyID {
+		if game.FriendlyID == friendlyID {
 			return game
 		}
 	}
@@ -104,18 +108,18 @@ func getGame(friendlyID string) Game {
 
 // While the server is running, report the state of the server to logs
 func ReportActiveGames() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	for true {
 		select {
 		case <-ticker.C:
 			fmt.Printf("There are currently: %v games active \n", len(activeGames))
 			for i, game := range activeGames {
-				players := activeGames[i].state.Players
+				players := activeGames[i].State.Players
 				fmt.Printf("------------------------------------------------ \n")
-				fmt.Printf("Game ID: %s \n", game.id)
+				fmt.Printf("Game ID: %s \n", game.Id)
 				fmt.Printf("Player Count: %v \n", len(players))
-				fmt.Printf("friendlyID: %s \n", game.friendlyID)
-				fmt.Printf("started: %v \n", game.state.Started)
+				fmt.Printf("friendlyID: %s \n", game.FriendlyID)
+				fmt.Printf("started: %v \n", game.State.Started)
 				for _, player := range players {
 					fmt.Printf("Player name: %s \n", player.Name)
 				}
@@ -127,7 +131,7 @@ func ReportActiveGames() {
 
 func FriendlyIDInUse(newID string) bool {
 	for _, game := range activeGames {
-		if game.friendlyID == newID {
+		if game.FriendlyID == newID {
 			return true
 		}
 	}

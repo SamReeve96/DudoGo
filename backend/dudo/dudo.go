@@ -17,10 +17,14 @@ type GameState struct {
 	Started    bool
 	// wildOnes      bool Do ones Count as any other Value
 	CurrentPlayer int
+	RoundActive   bool
 }
 
 // Player - a player of dudo
 type Player struct {
+	// TODO give players and ID, then when making a request for game state,
+	// if the player ID is correct, return the player info, otherwise
+	// you can lookup otherplayers states and cheat
 	Name               string
 	RemainingDiceCount int
 	Dice               []int
@@ -76,7 +80,7 @@ func setupPlayers(details NewGameDetails) {
 }
 
 // Calc the total Dice in the game currently
-func getTotalDiceCount() int {
+func GetTotalDiceCount() int {
 	totalDice := 0
 	for i := 0; i < len(gameState.Players); i++ {
 		totalDice += gameState.Players[i].RemainingDiceCount
@@ -86,18 +90,18 @@ func getTotalDiceCount() int {
 
 // run the game instance until it ends (total Dice == 0)
 func RunGame() {
-	totalDice := getTotalDiceCount()
+	totalDice := GetTotalDiceCount()
 	for totalDice > 0 {
 		gameState.Round++
 		fmt.Printf("Round: %v \n", gameState.Round)
 		executeRound()
-		totalDice = getTotalDiceCount()
+		totalDice = GetTotalDiceCount()
 	}
 	fmt.Printf("Game Over! Congrats: %v", gameState.Players[0].Name)
 }
 
 // Generate Dice Values for each of the player's Dice
-func rollDice(PlayerDiceNumber int) []int {
+func RollDice(PlayerDiceNumber int) []int {
 	// add a seed so numbers are randomised and non-repeatable on playthroughs
 	rand.Seed(time.Now().UnixNano())
 	var Dice []int
@@ -110,7 +114,7 @@ func rollDice(PlayerDiceNumber int) []int {
 }
 
 // Create a bet (a suggested Value and Count of that Value)
-func createBet() {
+func CreateBet() {
 	validBet := false
 	var betValue int
 	var betCount int
@@ -120,12 +124,12 @@ func createBet() {
 		if err != nil {
 			fmt.Println(err)
 		}
-		totalDiceCount := getTotalDiceCount()
+		totalDiceCount := GetTotalDiceCount()
 		betCount, err = strconv.Atoi(cli.HandleInput(fmt.Sprintf("and how many %v 's are you betting? (1-%v) \n", betValue, totalDiceCount)))
 		if err != nil {
 			fmt.Println(err)
 		}
-		validBet = validateBet(betValue, betCount)
+		validBet = ValidateBet(betValue, betCount)
 		if !validBet {
 			fmt.Print("Bet invalid, try again \n")
 		}
@@ -136,15 +140,15 @@ func createBet() {
 	gameState.CurrentBet = newBet
 
 	// check if current bet is the max possible bet, i.e. Count of Value = total die if so move to eval!
-	if gameState.CurrentBet.Count == getTotalDiceCount() {
+	if gameState.CurrentBet.Count == GetTotalDiceCount() {
 		evaluateCurrentBet()
 	}
 }
 
 // Check that the bet Value and Count are acceptable ints and are possible in the current game state
 // TODO - Return what validation failed to inform the player
-func validateBet(Value int, Count int) bool {
-	totalDiceCount := getTotalDiceCount()
+func ValidateBet(Value int, Count int) bool {
+	totalDiceCount := GetTotalDiceCount()
 	// is the Count of Dice valid?
 	if Count > totalDiceCount || Count < 0 {
 		return false
@@ -274,17 +278,21 @@ func getValueCount(Value int) int {
 	return ValueCount
 }
 
+func NewRound() {
+	for i := 0; i < len(gameState.Players); i++ {
+		gameState.Players[i].Dice = RollDice(gameState.Players[i].RemainingDiceCount)
+	}
+	gameState.CurrentBet = Bet{0, 0}
+}
+
 // Run though all the actions of a single Round of dudo (Players bet, until an accusation or max Dice Count)
 // TODO - The starting player should change, either be the one that lost a Dice the previous Round or one after them if eliminated
 func executeRound() {
+	NewRound()
 
-	for i := 0; i < len(gameState.Players); i++ {
-		gameState.Players[i].Dice = rollDice(gameState.Players[i].RemainingDiceCount)
-	}
-	gameState.CurrentBet = Bet{0, 0}
-	RoundActive := true
+	gameState.RoundActive = true
 Round:
-	for RoundActive {
+	for gameState.RoundActive {
 		getNextPlayer()
 		if len(gameState.Players) == 1 {
 			gameState.Players[0].RemainingDiceCount = 0
@@ -302,7 +310,7 @@ Round:
 					playerAction := cli.HandleInput("Do you want to Bet (B) or call BS (C)? \n")
 					if playerAction == "B" || playerAction == "b" {
 						validChoice = true
-						createBet()
+						CreateBet()
 					} else if playerAction == "C" || playerAction == "c" { //Should cast to lowwer case but cba for now
 						validChoice = true
 						accuse()
@@ -316,7 +324,7 @@ Round:
 					}
 				}
 			} else {
-				createBet()
+				CreateBet()
 			}
 
 		}
