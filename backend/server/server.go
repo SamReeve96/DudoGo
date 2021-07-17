@@ -13,11 +13,6 @@ import (
 	"github.com/SamReeve96/DudoGo/backend/gameManager"
 )
 
-type gameDetails struct {
-	players       int
-	dicePerPlayer int
-}
-
 func Serve() {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -28,7 +23,8 @@ func Serve() {
 	fileServer := http.FileServer(http.Dir("../frontend/dudogo/build/"))
 	http.Handle("/", fileServer)
 	http.HandleFunc("/NewGame", newGame)
-	http.HandleFunc("/joinGame", joinGame)
+	http.HandleFunc("/JoinGame", joinGame)
+	http.HandleFunc("/StartGame", startGame)
 
 	fmt.Printf("Starting server at port 8080\n")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -101,7 +97,65 @@ func newGame(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Printf("Server: Adding game to slice \n")
 		gameManager.NewGame(details)
+		w.WriteHeader(http.StatusOK)
+
 	default:
 		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
 	}
+}
+
+func joinGame(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
+		if err := r.ParseForm(); err != nil {
+			fmt.Printf("ParseForm() err: %v", err)
+			return
+		}
+		friendlyID := (r.FormValue("friendlyID"))
+		playerName := (r.FormValue("playerName"))
+
+		joined := gameManager.JoinGame(friendlyID, playerName)
+
+		if joined {
+			fmt.Printf("Added new player: %s to game: %s \n", playerName, friendlyID)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		fmt.Printf("Couldn't add new player: %s to game: %s \n", playerName, friendlyID)
+		w.WriteHeader(http.StatusUnauthorized)
+
+	case "POST":
+		fmt.Printf("Cant post a new game!")
+	default:
+		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
+	}
+}
+
+func startGame(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		fmt.Printf("Cant get a start game!")
+	case "POST":
+		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
+		if err := r.ParseForm(); err != nil {
+			fmt.Printf("ParseForm() err: %v", err)
+			return
+		}
+
+		friendlyID := (r.FormValue("friendlyID"))
+		creatorName := (r.FormValue("playerName"))
+
+		err := gameManager.StartGame(friendlyID, creatorName)
+
+		if err != nil {
+			fmt.Print(err.Error())
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+
+	default:
+		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
+	}
+
 }

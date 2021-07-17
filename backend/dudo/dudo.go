@@ -14,6 +14,7 @@ type GameState struct {
 	Players    []Player
 	Round      int
 	CurrentBet Bet
+	Started    bool
 	// wildOnes      bool Do ones Count as any other Value
 	CurrentPlayer int
 }
@@ -41,7 +42,7 @@ type NewGameDetails struct {
 // Global game state
 var gameState GameState
 
-// Setup the game and then execute the game loo
+// Setup the game
 func SetupGame(details NewGameDetails) GameState {
 	fmt.Printf("Hello! Welcome to dudo go! Before we can play we need to set a few rules \n")
 	gameState.Players = []Player{}
@@ -50,9 +51,10 @@ func SetupGame(details NewGameDetails) GameState {
 	for playerNo := 0; playerNo < len(gameState.Players); playerNo++ {
 		fmt.Printf("Good luck!: %v \n", gameState.Players[playerNo].Name)
 	}
-	//intalise the first player
+
 	gameState.CurrentPlayer = 0
 	gameState.Round = 0
+	gameState.Started = false
 
 	return gameState
 }
