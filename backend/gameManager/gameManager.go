@@ -75,26 +75,31 @@ func tryAddPlayer(game Game, newPlayerName string) bool {
 	return false
 }
 
-func StartGame(friendlyID string, playerName string) error {
-	gameToStart := GetGame(friendlyID)
+func UpdateGame(GameDetails Game) bool {
+	for i := range activeGames {
+		if GameDetails.FriendlyID == GameDetails.FriendlyID {
+			activeGames[i] = GameDetails
+			return true
+		}
+	}
+	return false
+}
 
-	if gameToStart.State.Players[1].Name == "" {
-		return errors.New("there is only the creator present, cant start game")
+func StartGame(gameToStart dudo.GameState, playerName string) (dudo.GameState, error) {
+	if gameToStart.Players[1].Name == "" {
+		return gameToStart, errors.New("there is only the creator present, cant start game")
 	}
 
-	if gameToStart.State.Players[0].Name != playerName {
-		return errors.New("only the creator can start a game")
+	if gameToStart.Players[0].Name != playerName {
+		return gameToStart, errors.New("only the creator can start a game")
 	}
 
-	gameToStart.State.Started = true
+	gameToStart.Started = true
 
 	// start the first round
-	dudo.NewRound()
+	gameToStart = dudo.NewRound(gameToStart)
 
-	// remove this at some point, but here to show that the game can be started.
-	go dudo.RunGame()
-
-	return nil
+	return gameToStart, nil
 }
 
 func GetGame(friendlyID string) Game {
@@ -108,7 +113,7 @@ func GetGame(friendlyID string) Game {
 
 // While the server is running, report the state of the server to logs
 func ReportActiveGames() {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	for true {
 		select {
 		case <-ticker.C:
@@ -132,6 +137,16 @@ func ReportActiveGames() {
 func FriendlyIDInUse(newID string) bool {
 	for _, game := range activeGames {
 		if game.FriendlyID == newID {
+			return true
+		}
+	}
+	return false
+}
+
+// Check if it is the turn of the submitted name in the submitted game
+func PlayersTurn(game dudo.GameState, playerName string) bool {
+	for i, player := range game.Players {
+		if player.Name == playerName && i == game.CurrentPlayer { // TODO change to use player ID not name and check if i = 0 initally.
 			return true
 		}
 	}
