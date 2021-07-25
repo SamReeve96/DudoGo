@@ -18,7 +18,6 @@ type GameState struct {
 	Started    bool
 	// wildOnes      bool Do ones Count as any other Value
 	CurrentPlayer int
-	RoundActive   bool
 }
 
 // Player - a player of dudo
@@ -273,6 +272,7 @@ func NewRound(gameState GameState) GameState {
 		gameState.Players[i].Dice = RollDice(gameState.Players[i].RemainingDiceCount)
 	}
 	gameState.CurrentBet = Bet{0, 0}
+	gameState.CurrentPlayer = 0
 	gameState.Round++
 
 	return gameState
@@ -288,9 +288,9 @@ func executeRound(gameState GameState) GameState {
 
 	NewRound(gameState)
 
-	gameState.RoundActive = true
+	var RoundActive bool = true
 Round:
-	for gameState.RoundActive {
+	for RoundActive {
 		gameState.CurrentPlayer = GetNextPlayer(gameState)
 		if len(gameState.Players) == 1 {
 			gameState.Players[0].RemainingDiceCount = 0

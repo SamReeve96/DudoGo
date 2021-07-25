@@ -15,6 +15,8 @@ import (
 	"github.com/google/uuid"
 )
 
+//TODO: tidy server and move game logic to game manager
+
 func Serve() {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -109,6 +111,8 @@ func newGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func joinGame(w http.ResponseWriter, r *http.Request) {
+	//TODO prevent joining a game in progress
+
 	switch r.Method {
 	case "GET":
 		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
